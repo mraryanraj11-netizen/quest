@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our 2-Month Quest</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      background: #0f0c20;
+      color: #fff;
+      font-family: 'Press Start 2P', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    #game-container {
+      position: relative;
+      border: 4px solid #ff4b82;
+      box-shadow: 0 0 25px rgba(255, 75, 130, 0.4), 0 0 50px rgba(0, 240, 255, 0.2);
+    }
+    canvas {
+      display: block;
+      background: #111;
+      image-rendering: pixelated;
+    }
+    #ui {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      pointer-events: none;
+      text-shadow: 2px 2px #000;
+    }
+    .hud-hearts {
+      color: #ff3366;
+    }
+    .hud-score {
+      color: #ffe600;
+    }
+    #popup {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 82%;
+      max-width: 520px;
+      background: #fdf6e2;
+      color: #2b1d0c;
+      border: 6px solid #8b5a2b;
+      box-shadow: 0 0 0 4px #2b1d0c, 0 10px 30px rgba(0,0,0,0.8);
+      padding: 24px;
+      text-align: center;
+      border-radius: 4px;
+      z-index: 10;
+    }
+    #popup h2 {
+      font-size: 14px;
+      color: #c92a54;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    #popup p {
+      font-size: 10px;
+      line-height: 1.8;
+      margin-bottom: 20px;
+      font-family: sans-serif;
+      font-weight: 600;
+    }
+    #popup button {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      background: #ff4b82;
+      color: #fff;
+      border: 3px solid #2b1d0c;
+      padding: 10px 18px;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 #2b1d0c;
+    }
+    #popup button:hover {
+      background: #ff2a6d;
+    }
+    #instructions {
+      margin-top: 14px;
+      font-size: 9px;
+      color: #888aa8;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="ui">
+    <div class="hud-hearts" id="hearts-display">❤❤❤</div>
+    <div class="hud-score" id="score-display">GOODIES: 0/5</div>
+  </div>
+
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+  <div id="popup">
+    <h2>✨ QUEST COMPLETED ✨</h2>
+    <p id="popup-text"></p>
+    <button onclick="restartGame()">REPLAY LEVEL</button>
+  </div>
+</div>
+
+<div id="instructions">CONTROLS: [W/A/D] or [ARROW KEYS] TO RUN & JUMP</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const LEVEL_WIDTH = 3200;
+const TOKYO_TRANSITION = 1400;
+
+let keys = {};
+window.addEventListener('keydown', e => { keys[e.code] = true; });
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+const player = {
+  x: 80,
+  y: 280,
+  w: 28,
+  h: 46,
+  vx: 0,
+  vy: 0,
+  speed: 4.2,
+  jumpPower: -10.5,
+  grounded: false,
+  lives: 3,
+  invincibleTimer: 0
+};
+
+const collectibles = [
+  { x: 340, y: 250, type: 'sushi', name: 'Sushi Roll', collected: false },
+  { x: 700, y: 230, type: 'matcha', name: 'Iced Matcha', collected: false },
+  { x: 1150, y: 240, type: 'chocolate', name: 'Lindor Truffle', collected: false },
+  { x: 1800, y: 230, type: 'kitten', name: 'Cute Kitten', collected: false },
+  { x: 2350, y: 220, type: 'flowers', name: 'Bouquet of Flowers', collected: false }
+];
+
+const obstacles = [
+  { x: 550, y: 295, w: 26, h: 26, type: 'battery', vx: -1.2, minX: 460, maxX: 640 },
+  { x: 950, y: 280, w: 26, h: 42, type: 'hangry', vx: -1.5, minX: 860, maxX: 1060 },
+  { x: 1600, y: 295, w: 26, h: 26, type: 'battery', vx: -1.5, minX: 1500, maxX: 1720 },
+  { x: 2100, y: 280, w: 26, h: 42, type: 'hangry', vx: -1.8, minX: 2000, maxX: 2250 },
+  { x: 2650, y: 295, w: 26, h: 26, type: 'battery', vx: -1.6, minX: 2550, maxX: 2750 }
+];
+
+const platforms = [
+  { x: 0, y: 322, w: LEVEL_WIDTH, h: 80 },
+  { x: 300, y: 260, w: 100, h: 14 },
+  { x: 680, y: 240, w: 90, h: 14 },
+  { x: 1100, y: 250, w: 120, h: 14 },
+  { x: 1750, y: 240, w: 110, h: 14 },
+  { x: 2300, y: 230, w: 120, h: 14 }
+];
+
+const chest = { x: 3020, y: 290, w: 32, h: 32, opened: false };
+const tani = { x: 3090, y: 276, w: 28, h: 46 };
+
+let cameraX = 0;
+let collectedCount = 0;
+let gameOver = false;
+
+function update() {
+  if (gameOver) return;
+
+  if (keys['KeyA'] || keys['ArrowLeft']) player.vx = -player.speed;
+  else if (keys['KeyD'] || keys['ArrowRight']) player.vx = player.speed;
+  else player.vx = 0;
+
+  if ((keys['KeyW'] || keys['ArrowUp'] || keys['Space']) && player.grounded) {
+    player.vy = player.jumpPower;
+    player.grounded = false;
+  }
+
+  player.vy += 0.55;
+  player.x += player.vx;
+  player.y += player.vy;
+
+  if (player.x < 0) player.x = 0;
+  if (player.x > LEVEL_WIDTH - player.w) player.x = LEVEL_WIDTH - player.w;
+
+  player.grounded = false;
+  platforms.forEach(p => {
+    if (
+      player.x + player.w > p.x &&
+      player.x < p.x + p.w &&
+      player.y + player.h >= p.y &&
+      player.y + player.h <= p.y + player.vy + 8 &&
+      player.vy >= 0
+    ) {
+      player.y = p.y - player.h;
+      player.vy = 0;
+      player.grounded = true;
+    }
+  });
+
+  collectibles.forEach(item => {
+    if (!item.collected && checkOverlap(player, { x: item.x - 12, y: item.y - 12, w: 24, h: 24 })) {
+      item.collected = true;
+      collectedCount++;
+      document.getElementById('score-display').innerText = `GOODIES: ${collectedCount}/5`;
+    }
+  });
+
+  obstacles.forEach(obs => {
+    obs.x += obs.vx;
+    if (obs.x < obs.minX || obs.x > obs.maxX) obs.vx *= -1;
+
+    if (player.invincibleTimer === 0 && checkOverlap(player, obs)) {
+      player.lives--;
+      player.invincibleTimer = 75;
+      player.vy = -6;
+      player.vx = player.x < obs.x ? -5 : 5;
+      updateHearts();
+
+      if (player.lives <= 0) {
+        respawnPlayer();
+      }
+    }
+  });
+
+  if (player.invincibleTimer > 0) player.invincibleTimer--;
+
+  if (!chest.opened && checkOverlap(player, chest)) {
+    chest.opened = true;
+    showAnniversaryLetter();
+  }
+
+  cameraX = player.x - canvas.width / 2 + 60;
+  if (cameraX < 0) cameraX = 0;
+  if (cameraX > LEVEL_WIDTH - canvas.width) cameraX = LEVEL_WIDTH - canvas.width;
+}
+
+function updateHearts() {
+  let hearts = '';
+  for (let i = 0; i < player.lives; i++) hearts += '❤';
+  document.getElementById('hearts-display').innerText = hearts;
+}
+
+function respawnPlayer() {
+  player.lives = 3;
+  player.x = 80;
+  player.y = 260;
+  updateHearts();
+}
+
+function checkOverlap(r1, r2) {
+  return (
+    r1.x < r2.x + r2.w &&
+    r1.x + r1.w > r2.x &&
+    r1.y < r2.y + r2.h &&
+    r1.y + r1.h > r2.y
+  );
+}
+
+function showAnniversaryLetter() {
+  gameOver = true;
+  const popup = document.getElementById('popup');
+  const text = document.getElementById('popup-text');
+  text.innerHTML = `
+    <b>Happy 2 Months! ❤️</b><br><br>
+    I put together all the things you love—the matcha runs, the Lindor truffles, the sushi plates, and little kittens—just to get through the chaos and find you at the finish line.<br><br>
+    Two months in, and genuinely every second with you is my favorite part of the week. No matter if we’re exploring Central, getting lost in neon lights, or just lying on the sofa eating food together, I love being around you so much.<br><br>
+    Thank you for being you, for the cake, and for putting the biggest smile on my face every single day. Here's to us, month 2 down, and many more adventures ahead. ✨
+  `;
+  popup.style.display = 'block';
+}
+
+function restartGame() {
+  document.getElementById('popup').style.display = 'none';
+  chest.opened = false;
+  collectedCount = 0;
+  collectibles.forEach(c => c.collected = false);
+  document.getElementById('score-display').innerText = 'GOODIES: 0/5';
+  respawnPlayer();
+  gameOver = false;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.translate(-Math.floor(cameraX), 0);
+
+  // Backgrounds: London to Neon Tokyo
+  drawEnvironment();
+
+  // Platforms
+  platforms.forEach(p => {
+    if (p.x < TOKYO_TRANSITION) {
+      ctx.fillStyle = '#2c2b36';
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+      ctx.fillStyle = '#1c1b24';
+      ctx.fillRect(p.x, p.y + 4, p.w, p.h - 4);
+    } else {
+      ctx.fillStyle = '#1a0d33';
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+      ctx.fillStyle = '#ff0077';
+      ctx.fillRect(p.x, p.y, p.w, 4);
+    }
+  });
+
+  // Collectibles
+  collectibles.forEach(drawCollectible);
+
+  // Obstacles
+  obstacles.forEach(drawObstacle);
+
+  // Chest & Tani
+  drawChest(chest);
+  drawTani(tani.x, tani.y);
+
+  // Player
+  if (player.invincibleTimer % 8 < 4) {
+    drawPlayer(player.x, player.y);
+  }
+
+  ctx.restore();
+}
+
+function drawEnvironment() {
+  // London section sky & landmarks
+  ctx.fillStyle = '#1a192e';
+  ctx.fillRect(0, 0, TOKYO_TRANSITION, canvas.height);
+  
+  // Big Ben silhouette & Victorian lanterns
+  ctx.fillStyle = '#100f21';
+  ctx.fillRect(200, 120, 48, 160);
+  ctx.fillRect(212, 70, 24, 50);
+  ctx.fillRect(220, 40, 8, 30);
+  
+  // London Streetlamps
+  for (let lx = 120; lx < TOKYO_TRANSITION; lx += 260) {
+    ctx.fillStyle = '#08080f';
+    ctx.fillRect(lx, 210, 6, 112);
+    ctx.fillStyle = '#ffeaa7';
+    ctx.beginPath();
+    ctx.arc(lx + 3, 208, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Futuristic Tokyo neon background
+  ctx.fillStyle = '#090517';
+  ctx.fillRect(TOKYO_TRANSITION, 0, LEVEL_WIDTH - TOKYO_TRANSITION, canvas.height);
+
+  // Cyberpunk skyscrapers & neon signs
+  const buildings = [
+    { x: 1450, w: 120, h: 220, color: '#ff007f', sign: '東京' },
+    { x: 1650, w: 140, h: 260, color: '#00f0ff', sign: 'NEON' },
+    { x: 1900, w: 130, h: 200, color: '#ffe600', sign: 'RAMEN' },
+    { x: 2150, w: 150, h: 250, color: '#b537f2', sign: 'SHIBUYA' },
+    { x: 2450, w: 140, h: 270, color: '#00f0ff', sign: 'LOVE' },
+    { x: 2750, w: 160, h: 230, color: '#ff0055', sign: 'MATCH' }
+  ];
+
+  buildings.forEach(b => {
+    ctx.fillStyle = '#120b29';
+    ctx.fillRect(b.x, canvas.height - b.h, b.w, b.h);
+    // Neon Signboard
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(b.x + 20, canvas.height - b.h + 20, b.w - 40, 40);
+    ctx.fillStyle = b.color;
+    ctx.font = '10px "Press Start 2P"';
+    ctx.fillText(b.sign, b.x + 26, canvas.height - b.h + 46);
+  });
+}
+
+function drawPlayer(x, y) {
+  // Jacked frame: Broad shoulders, skin fade, chain
+  // Skin tone (light brown)
+  ctx.fillStyle = '#c58c65';
+  ctx.fillRect(x + 5, y + 4, 18, 12); // face/neck
+  
+  // Black hair with scruffy fade
+  ctx.fillStyle = '#111';
+  ctx.fillRect(x + 4, y, 20, 6); // scruffy top
+  ctx.fillStyle = '#3a2c22';
+  ctx.fillRect(x + 3, y + 5, 3, 5); // skin fade side
+  ctx.fillRect(x + 22, y + 5, 3, 5);
+
+  // Black T-shirt (jacked wide shoulders)
+  ctx.fillStyle = '#1c1c1e';
+  ctx.fillRect(x + 2, y + 14, 24, 16); // chest/shoulders
+  
+  // Silver chain
+  ctx.fillStyle = '#dcdde1';
+  ctx.fillRect(x + 9, y + 15, 10, 3);
+  ctx.fillRect(x + 13, y + 18, 3, 3);
+
+  // Muscular arms
+  ctx.fillStyle = '#c58c65';
+  ctx.fillRect(x - 1, y + 16, 4, 12);
+  ctx.fillRect(x + 25, y + 16, 4, 12);
+
+  // Grey Jeans
+  ctx.fillStyle = '#636e72';
+  ctx.fillRect(x + 5, y + 30, 8, 14);
+  ctx.fillRect(x + 15, y + 30, 8, 14);
+
+  // Black sneakers
+  ctx.fillStyle = '#111';
+  ctx.fillRect(x + 3, y + 42, 10, 4);
+  ctx.fillRect(x + 15, y + 42, 10, 4);
+}
+
+function drawTani(x, y) {
+  // Light brown skin, long black hair with gold highlights, corset, short skirt, red lipstick
+  // Hair back layer
+  ctx.fillStyle = '#1a181b';
+  ctx.fillRect(x + 1, y + 4, 26, 32);
+  // Golden highlights
+  ctx.fillStyle = '#d4af37';
+  ctx.fillRect(x + 3, y + 10, 3, 20);
+  ctx.fillRect(x + 22, y + 10, 3, 20);
+
+  // Face
+  ctx.fillStyle = '#c58c65';
+  ctx.fillRect(x + 6, y + 4, 16, 12);
+
+  // Red lipstick
+  ctx.fillStyle = '#ff1744';
+  ctx.fillRect(x + 12, y + 13, 5, 2);
+
+  // Black Corset
+  ctx.fillStyle = '#0f0f12';
+  ctx.fillRect(x + 6, y + 16, 16, 12);
+  ctx.fillStyle = '#ff4081'; // subtle corset lacing
+  ctx.fillRect(x + 13, y + 18, 2, 8);
+
+  // Short Black Skirt
+  ctx.fillStyle = '#1e1e24';
+  ctx.fillRect(x + 4, y + 28, 20, 7);
+
+  // Legs (light brown skin)
+  ctx.fillStyle = '#c58c65';
+  ctx.fillRect(x + 7, y + 35, 5, 8);
+  ctx.fillRect(x + 16, y + 35, 5, 8);
+
+  // Black boots
+  ctx.fillStyle = '#09090b';
+  ctx.fillRect(x + 6, y + 42, 6, 4);
+  ctx.fillRect(x + 16, y + 42, 6, 4);
+}
+
+function drawCollectible(item) {
+  if (item.collected) return;
+  const { x, y, type } = item;
+
+  if (type === 'sushi') {
+    ctx.fillStyle = '#222';
+    ctx.fillRect(x - 8, y - 8, 16, 16);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x - 5, y - 5, 10, 10);
+    ctx.fillStyle = '#ff6348';
+    ctx.fillRect(x - 2, y - 2, 5, 5);
+  } else if (type === 'matcha') {
+    ctx.fillStyle = '#2ed573';
+    ctx.fillRect(x - 6, y - 7, 12, 16);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x - 7, y - 9, 14, 3); // lid
+    ctx.fillStyle = '#70a1ff';
+    ctx.fillRect(x, y - 13, 2, 5); // straw
+  } else if (type === 'chocolate') {
+    ctx.fillStyle = '#d63031'; // red Lindor wrapper
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#eccc68'; // gold bow ends
+    ctx.fillRect(x - 10, y - 2, 4, 4);
+    ctx.fillRect(x + 6, y - 2, 4, 4);
+  } else if (type === 'kitten') {
+    ctx.fillStyle = '#ffa502';
+    ctx.fillRect(x - 7, y - 4, 14, 10);
+    ctx.fillRect(x - 8, y - 8, 4, 4); // ears
+    ctx.fillRect(x + 4, y - 8, 4, 4);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x - 4, y - 1, 2, 2);
+    ctx.fillRect(x + 2, y - 1, 2, 2);
+  } else if (type === 'flowers') {
+    ctx.fillStyle = '#ff4757';
+    ctx.beginPath();
+    ctx.arc(x - 4, y - 4, 5, 0, Math.PI * 2);
+    ctx.arc(x + 4, y - 4, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#2ed573';
+    ctx.fillRect(x - 1, y, 3, 10);
+  }
+}
+
+function drawObstacle(obs) {
+  const { x, y, type } = obs;
+  if (type === 'battery') {
+    ctx.fillStyle = '#2f3542';
+    ctx.fillRect(x, y, 22, 14);
+    ctx.fillRect(x + 22, y + 4, 3, 6);
+    ctx.fillStyle = '#ff4757';
+    ctx.fillRect(x + 3, y + 3, 4, 8); // blinking low battery bar
+  } else if (type === 'hangry') {
+    // Mini hangry chibi version
+    ctx.fillStyle = '#ff6b81';
+    ctx.fillRect(x + 3, y + 2, 18, 14);
+    // angry brows
+    ctx.fillStyle = '#000';
+    ctx.fillRect(x + 5, y + 6, 4, 2);
+    ctx.fillRect(x + 14, y + 6, 4, 2);
+    // little storm cloud
+    ctx.fillStyle = '#57606f';
+    ctx.fillRect(x + 4, y - 8, 16, 6);
+  }
+}
+
+function drawChest(c) {
+  ctx.fillStyle = '#8b5a2b';
+  ctx.fillRect(c.x, c.y + 8, c.w, c.h - 8);
+  ctx.fillStyle = '#d4af37';
+  ctx.fillRect(c.x, c.y + 4, c.w, 6);
+  ctx.fillRect(c.x + 13, c.y + 14, 6, 6); // keyhole
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
