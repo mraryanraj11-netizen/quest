@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Our 2-Month Quest</title>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <title>Cozy Room Quest ❤️</title>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
     * {
       box-sizing: border-box;
@@ -13,535 +13,474 @@
       user-select: none;
     }
     body {
-      background: #0f0c20;
-      color: #fff;
-      font-family: 'Press Start 2P', monospace;
+      background: radial-gradient(circle at center, #ffdce5 0%, #f7b7cb 100%);
+      font-family: 'Comfortaa', cursive, sans-serif;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
       overflow: hidden;
+      padding: 10px;
     }
+
+    /* Ambient floating hearts */
+    .heart-particle {
+      position: absolute;
+      color: rgba(255, 107, 139, 0.45);
+      font-size: 16px;
+      pointer-events: none;
+      animation: floatUp 7s linear infinite;
+      z-index: 1;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(105vh) scale(0.7); opacity: 0; }
+      10% { opacity: 0.8; }
+      90% { opacity: 0.8; }
+      100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+    }
+
     #game-container {
       position: relative;
-      border: 4px solid #ff4b82;
-      box-shadow: 0 0 25px rgba(255, 75, 130, 0.4), 0 0 50px rgba(0, 240, 255, 0.2);
+      width: 100%;
+      max-width: 820px;
+      aspect-ratio: 4 / 3;
+      background: #fff8f0;
+      border: 8px solid #ff9ebb;
+      border-radius: 28px;
+      box-shadow: 0 16px 40px rgba(255, 105, 145, 0.25), 0 0 0 4px #fff;
+      overflow: hidden;
+      z-index: 5;
     }
-    canvas {
-      display: block;
-      background: #111;
-      image-rendering: pixelated;
-    }
-    #ui {
+
+    /* Room Decor Elements */
+    .wall {
       position: absolute;
-      top: 14px;
-      left: 14px;
-      right: 14px;
+      inset: 0 0 42% 0;
+      background: repeating-linear-gradient(90deg, #ffeef3, #ffeef3 38px, #ffe4ec 38px, #ffe4ec 40px);
+    }
+    .wainscoting {
+      position: absolute;
+      top: 55%;
+      left: 0;
+      right: 0;
+      height: 3%;
+      background: #f3cbd7;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+    }
+    .floor {
+      position: absolute;
+      inset: 58% 0 0 0;
+      background: repeating-linear-gradient(65deg, #f5d7be 0px, #f5d7be 28px, #eed0b5 28px, #eed0b5 30px);
+    }
+    .rug {
+      position: absolute;
+      bottom: 6%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 58%;
+      height: 28%;
+      background: radial-gradient(ellipse at center, #ffffff 0%, #ffe6ef 100%);
+      border: 3px dashed #ff9ebd;
+      border-radius: 50%;
+      box-shadow: 0 6px 14px rgba(255, 182, 193, 0.35);
+    }
+    .fairy-lights {
+      position: absolute;
+      top: 12px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-around;
+      padding: 0 20px;
+    }
+    .light {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff3a1;
+      box-shadow: 0 0 10px 4px rgba(255, 238, 115, 0.85);
+      animation: pulse 1.8s infinite alternate;
+    }
+    .light:nth-child(even) {
+      animation-delay: 0.9s;
+      background: #ffb8d1;
+      box-shadow: 0 0 10px 4px rgba(255, 184, 209, 0.85);
+    }
+    @keyframes pulse {
+      0% { opacity: 0.5; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1.25); }
+    }
+
+    /* Top HUD / Clue counter */
+    #hud {
+      position: absolute;
+      top: 18px;
+      left: 20px;
+      right: 20px;
       display: flex;
       justify-content: space-between;
-      font-size: 11px;
+      align-items: center;
+      z-index: 10;
       pointer-events: none;
-      text-shadow: 2px 2px #000;
     }
-    .hud-hearts {
-      color: #ff3366;
+    .badge {
+      background: rgba(255, 255, 255, 0.92);
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 2px solid #ffb0c7;
+      font-size: 13px;
+      color: #ff527b;
+      font-weight: 700;
+      box-shadow: 0 4px 10px rgba(255, 105, 145, 0.15);
     }
-    .hud-score {
-      color: #ffe600;
+
+    /* Interactive Objects */
+    .room-item {
+      position: absolute;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 8;
     }
-    #popup {
+    .room-item:hover {
+      transform: scale(1.15) translateY(-4px);
+    }
+    .room-item .icon {
+      font-size: 42px;
+      filter: drop-shadow(0 6px 6px rgba(0,0,0,0.12));
+    }
+    .item-label {
+      background: rgba(255, 255, 255, 0.92);
+      color: #ff5e84;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      margin-top: 4px;
+      border: 1.5px solid #ffbccf;
+      white-space: nowrap;
+    }
+
+    /* Placements */
+    #item-flowers { top: 38%; left: 8%; }
+    #item-cake { top: 36%; right: 10%; }
+    #item-cat { bottom: 12%; left: 47%; transform: translateX(-50%); }
+    #item-sushi { bottom: 22%; left: 24%; }
+    #item-chest { bottom: 18%; right: 18%; }
+
+    /* Modals & Overlays */
+    .modal-overlay {
       display: none;
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 82%;
-      max-width: 520px;
-      background: #fdf6e2;
-      color: #2b1d0c;
-      border: 6px solid #8b5a2b;
-      box-shadow: 0 0 0 4px #2b1d0c, 0 10px 30px rgba(0,0,0,0.8);
+      inset: 0;
+      background: rgba(43, 20, 29, 0.45);
+      backdrop-filter: blur(4px);
+      z-index: 30;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: #fffdf9;
+      border-radius: 24px;
       padding: 24px;
+      max-width: 440px;
+      width: 100%;
       text-align: center;
-      border-radius: 4px;
-      z-index: 10;
+      border: 4px solid #ff9ebb;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    #popup h2 {
-      font-size: 14px;
-      color: #c92a54;
+    @keyframes popIn {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .card h3 {
+      font-size: 17px;
+      color: #ff527b;
+      margin-bottom: 10px;
+    }
+    .card p {
+      font-size: 13px;
+      color: #634f56;
+      line-height: 1.6;
       margin-bottom: 16px;
-      line-height: 1.5;
     }
-    #popup p {
-      font-size: 10px;
-      line-height: 1.8;
-      margin-bottom: 20px;
-      font-family: sans-serif;
-      font-weight: 600;
+    .digit-reveal {
+      display: inline-block;
+      background: #ffe3ec;
+      border: 2px dashed #ff6b8f;
+      color: #ff3366;
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 16px;
     }
-    #popup button {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 10px;
-      background: #ff4b82;
+    .btn {
+      background: linear-gradient(135deg, #ff7597 0%, #ff4d79 100%);
       color: #fff;
-      border: 3px solid #2b1d0c;
-      padding: 10px 18px;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 16px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
       cursor: pointer;
-      box-shadow: 3px 3px 0 #2b1d0c;
+      box-shadow: 0 4px 12px rgba(255, 77, 121, 0.3);
+      transition: opacity 0.2s;
     }
-    #popup button:hover {
-      background: #ff2a6d;
+    .btn:hover {
+      opacity: 0.92;
     }
-    #instructions {
+
+    /* Safe Keypad */
+    #code-inputs {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 18px 0;
+    }
+    .code-box {
+      width: 46px;
+      height: 54px;
+      text-align: center;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 18px;
+      border: 2px solid #ff9ebb;
+      border-radius: 12px;
+      background: #fff;
+      color: #ff3b6d;
+    }
+    .code-box:focus {
+      outline: none;
+      border-color: #ff3b6d;
+      box-shadow: 0 0 0 3px rgba(255, 59, 109, 0.25);
+    }
+
+    /* Final Scroll Overlay */
+    #scroll-modal .card {
+      background: #fffbf2;
+      border-color: #e5b078;
+      max-width: 520px;
+      max-height: 90%;
+      overflow-y: auto;
+      border-radius: 16px;
+      padding: 28px 24px;
+      border: 3px solid #d49a5b;
+      box-shadow: inset 0 0 40px rgba(224, 169, 109, 0.25), 0 16px 40px rgba(0,0,0,0.3);
+    }
+    #scroll-modal h2 {
+      font-size: 18px;
+      color: #d1496a;
+      margin-bottom: 14px;
+    }
+    #scroll-modal p {
+      font-size: 13px;
+      color: #44322c;
+      line-height: 1.8;
+      text-align: left;
+    }
+
+    #tip {
       margin-top: 14px;
-      font-size: 9px;
-      color: #888aa8;
-      letter-spacing: 1px;
+      font-size: 13px;
+      color: #a8566f;
+      font-weight: 700;
+      text-align: center;
+      z-index: 5;
     }
   </style>
 </head>
 <body>
 
+<!-- Ambient Heart Particles -->
+<div class="heart-particle" style="left: 10%; animation-delay: 0s;">💖</div>
+<div class="heart-particle" style="left: 28%; animation-delay: 2.2s;">✨</div>
+<div class="heart-particle" style="left: 45%; animation-delay: 4.5s;">💕</div>
+<div class="heart-particle" style="left: 65%; animation-delay: 1.2s;">🌸</div>
+<div class="heart-particle" style="left: 82%; animation-delay: 3.4s;">💗</div>
+<div class="heart-particle" style="left: 92%; animation-delay: 5.6s;">❤️</div>
+
 <div id="game-container">
-  <div id="ui">
-    <div class="hud-hearts" id="hearts-display">❤❤❤</div>
-    <div class="hud-score" id="score-display">GOODIES: 0/5</div>
+  <!-- Room Aesthetics -->
+  <div class="wall"></div>
+  <div class="fairy-lights">
+    <div class="light"></div><div class="light"></div><div class="light"></div>
+    <div class="light"></div><div class="light"></div><div class="light"></div>
+    <div class="light"></div><div class="light"></div><div class="light"></div>
+  </div>
+  <div class="wainscoting"></div>
+  <div class="floor"></div>
+  <div class="rug"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="badge">CLUES FOUND: <span id="clue-counter">0</span>/4</div>
+    <div class="badge" style="color: #ff3366;">2 MONTHS TOGETHER ❤️</div>
   </div>
 
-  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <!-- Interactive Room Objects -->
+  <div class="room-item" id="item-flowers" onclick="openClue('flowers')">
+    <div class="icon">💐</div>
+    <div class="item-label">Market Flowers</div>
+  </div>
 
-  <div id="popup">
-    <h2>✨ QUEST COMPLETED ✨</h2>
-    <p id="popup-text"></p>
-    <button onclick="restartGame()">REPLAY LEVEL</button>
+  <div class="room-item" id="item-cake" onclick="openClue('cake')">
+    <div class="icon">🎂</div>
+    <div class="item-label">Pink & White Cake</div>
+  </div>
+
+  <div class="room-item" id="item-sushi" onclick="openClue('sushi')">
+    <div class="icon">🍣</div>
+    <div class="item-label">Sushi Tray</div>
+  </div>
+
+  <div class="room-item" id="item-cat" onclick="openClue('cat')">
+    <div class="icon">🐱💤</div>
+    <div class="item-label">Sleepy Kitten</div>
+  </div>
+
+  <div class="room-item" id="item-chest" onclick="openSafe()">
+    <div class="icon">🔒🎁</div>
+    <div class="item-label">Secret Chest</div>
+  </div>
+
+  <!-- Clue Inspection Modal -->
+  <div class="modal-overlay" id="clue-modal">
+    <div class="card">
+      <div id="clue-emoji" style="font-size: 38px; margin-bottom: 8px;"></div>
+      <h3 id="clue-title"></h3>
+      <p id="clue-desc"></p>
+      <div class="digit-reveal" id="clue-digit"></div>
+      <div>
+        <button class="btn" onclick="closeClue()">Keep Exploring</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Safe Lock Modal -->
+  <div class="modal-overlay" id="safe-modal">
+    <div class="card">
+      <div style="font-size: 38px; margin-bottom: 6px;">🔐</div>
+      <h3>Unlock Our Treasure Chest</h3>
+      <p>Enter the 4-digit code uncovered from your memories around the room.</p>
+      <div id="code-inputs">
+        <input type="text" maxlength="1" class="code-box" id="c0" oninput="moveFocus(0)" inputmode="numeric">
+        <input type="text" maxlength="1" class="code-box" id="c1" oninput="moveFocus(1)" inputmode="numeric">
+        <input type="text" maxlength="1" class="code-box" id="c2" oninput="moveFocus(2)" inputmode="numeric">
+        <input type="text" maxlength="1" class="code-box" id="c3" oninput="moveFocus(3)" inputmode="numeric">
+      </div>
+      <p id="safe-error" style="color: #ff3366; font-size: 11px; display: none; margin-bottom: 12px;">Hmm, that's not quite the date... check the clues!</p>
+      <button class="btn" onclick="checkCode()">Open Chest ✨</button>
+      <button class="btn" style="background: #e2d2d6; color: #555; margin-left: 6px;" onclick="closeSafe()">Back</button>
+    </div>
+  </div>
+
+  <!-- Final Letter Scroll Modal -->
+  <div class="modal-overlay" id="scroll-modal">
+    <div class="card">
+      <div style="font-size: 40px; margin-bottom: 6px;">📜✨</div>
+      <h2>Happy 2 Months, Tani ❤️</h2>
+      <p>
+        From the purple and white flowers at the market to you surprising me with the most thoughtful homemade birthday cake, every little memory we’ve made so far has been so special to me.<br><br>
+        You remind me of a sleepy little kitten when we cuddle, and honestly, your hugs are my absolute favorite place to be. You are so genuinely lovely, caring, and funny, and I appreciate everything about who you are.<br><br>
+        These past 2 months have flown by, and no matter what we’re doing—whether we’re running around grabbing sushi or just doing nothing together on the couch—I truly love every single second around you.<br><br>
+        Thank you for being in my life and making everything brighter. Here’s to us. 🥰
+      </p>
+      <button class="btn" style="margin-top: 14px;" onclick="closeScroll()">Read Again ❤️</button>
+    </div>
   </div>
 </div>
 
-<div id="instructions">CONTROLS: [W/A/D] or [ARROW KEYS] TO RUN & JUMP</div>
+<div id="tip">Tap the cute objects around the room to find all the clues & unlock the chest! 🌸</div>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-const LEVEL_WIDTH = 3200;
-const TOKYO_TRANSITION = 1400;
-
-let keys = {};
-window.addEventListener('keydown', e => { keys[e.code] = true; });
-window.addEventListener('keyup', e => { keys[e.code] = false; });
-
-const player = {
-  x: 80,
-  y: 280,
-  w: 28,
-  h: 46,
-  vx: 0,
-  vy: 0,
-  speed: 4.2,
-  jumpPower: -10.5,
-  grounded: false,
-  lives: 3,
-  invincibleTimer: 0
+const clueData = {
+  flowers: {
+    emoji: '💐',
+    title: 'Market Flowers',
+    desc: 'The purple & white blooms from our trip to the flower market. Just a reminder of how much brighter everything looks when you’re standing next to them.',
+    digit: 'Clue 1 of 4: First digit is [ 2 ]'
+  },
+  cake: {
+    emoji: '🎂',
+    title: 'Pink & White Birthday Cake',
+    desc: 'The best cake ever made. You spending all that time in the kitchen just to make my birthday so sweet meant more to me than you know.',
+    digit: 'Clue 2 of 4: Second digit is [ 4 ]'
+  },
+  cat: {
+    emoji: '🐱💤',
+    title: 'Sleepy Little Kitten',
+    desc: 'Look at this cutie. Always reminding me of you—the sweetest little kitten who loves to nap, get cozy, and give the absolute best cuddles in the world.',
+    digit: 'Clue 3 of 4: Third digit is [ 0 ]'
+  },
+  sushi: {
+    emoji: '🍣',
+    title: 'Sushi Time',
+    desc: 'Because you could eat sushi every single day without getting tired of it. Any date with good food and your company is top tier.',
+    digit: 'Clue 4 of 4: Fourth digit is [ 7 ]'
+  }
 };
 
-const collectibles = [
-  { x: 340, y: 250, type: 'sushi', name: 'Sushi Roll', collected: false },
-  { x: 700, y: 230, type: 'matcha', name: 'Iced Matcha', collected: false },
-  { x: 1150, y: 240, type: 'chocolate', name: 'Lindor Truffle', collected: false },
-  { x: 1800, y: 230, type: 'kitten', name: 'Cute Kitten', collected: false },
-  { x: 2350, y: 220, type: 'flowers', name: 'Bouquet of Flowers', collected: false }
-];
+const discoveredClues = new Set();
+const CORRECT_PASSCODE = "2407";
 
-const obstacles = [
-  { x: 550, y: 295, w: 26, h: 26, type: 'battery', vx: -1.2, minX: 460, maxX: 640 },
-  { x: 950, y: 280, w: 26, h: 42, type: 'hangry', vx: -1.5, minX: 860, maxX: 1060 },
-  { x: 1600, y: 295, w: 26, h: 26, type: 'battery', vx: -1.5, minX: 1500, maxX: 1720 },
-  { x: 2100, y: 280, w: 26, h: 42, type: 'hangry', vx: -1.8, minX: 2000, maxX: 2250 },
-  { x: 2650, y: 295, w: 26, h: 26, type: 'battery', vx: -1.6, minX: 2550, maxX: 2750 }
-];
-
-const platforms = [
-  { x: 0, y: 322, w: LEVEL_WIDTH, h: 80 },
-  { x: 300, y: 260, w: 100, h: 14 },
-  { x: 680, y: 240, w: 90, h: 14 },
-  { x: 1100, y: 250, w: 120, h: 14 },
-  { x: 1750, y: 240, w: 110, h: 14 },
-  { x: 2300, y: 230, w: 120, h: 14 }
-];
-
-const chest = { x: 3020, y: 290, w: 32, h: 32, opened: false };
-const tani = { x: 3090, y: 276, w: 28, h: 46 };
-
-let cameraX = 0;
-let collectedCount = 0;
-let gameOver = false;
-
-function update() {
-  if (gameOver) return;
-
-  if (keys['KeyA'] || keys['ArrowLeft']) player.vx = -player.speed;
-  else if (keys['KeyD'] || keys['ArrowRight']) player.vx = player.speed;
-  else player.vx = 0;
-
-  if ((keys['KeyW'] || keys['ArrowUp'] || keys['Space']) && player.grounded) {
-    player.vy = player.jumpPower;
-    player.grounded = false;
-  }
-
-  player.vy += 0.55;
-  player.x += player.vx;
-  player.y += player.vy;
-
-  if (player.x < 0) player.x = 0;
-  if (player.x > LEVEL_WIDTH - player.w) player.x = LEVEL_WIDTH - player.w;
-
-  player.grounded = false;
-  platforms.forEach(p => {
-    if (
-      player.x + player.w > p.x &&
-      player.x < p.x + p.w &&
-      player.y + player.h >= p.y &&
-      player.y + player.h <= p.y + player.vy + 8 &&
-      player.vy >= 0
-    ) {
-      player.y = p.y - player.h;
-      player.vy = 0;
-      player.grounded = true;
-    }
-  });
-
-  collectibles.forEach(item => {
-    if (!item.collected && checkOverlap(player, { x: item.x - 12, y: item.y - 12, w: 24, h: 24 })) {
-      item.collected = true;
-      collectedCount++;
-      document.getElementById('score-display').innerText = `GOODIES: ${collectedCount}/5`;
-    }
-  });
-
-  obstacles.forEach(obs => {
-    obs.x += obs.vx;
-    if (obs.x < obs.minX || obs.x > obs.maxX) obs.vx *= -1;
-
-    if (player.invincibleTimer === 0 && checkOverlap(player, obs)) {
-      player.lives--;
-      player.invincibleTimer = 75;
-      player.vy = -6;
-      player.vx = player.x < obs.x ? -5 : 5;
-      updateHearts();
-
-      if (player.lives <= 0) {
-        respawnPlayer();
-      }
-    }
-  });
-
-  if (player.invincibleTimer > 0) player.invincibleTimer--;
-
-  if (!chest.opened && checkOverlap(player, chest)) {
-    chest.opened = true;
-    showAnniversaryLetter();
-  }
-
-  cameraX = player.x - canvas.width / 2 + 60;
-  if (cameraX < 0) cameraX = 0;
-  if (cameraX > LEVEL_WIDTH - canvas.width) cameraX = LEVEL_WIDTH - canvas.width;
-}
-
-function updateHearts() {
-  let hearts = '';
-  for (let i = 0; i < player.lives; i++) hearts += '❤';
-  document.getElementById('hearts-display').innerText = hearts;
-}
-
-function respawnPlayer() {
-  player.lives = 3;
-  player.x = 80;
-  player.y = 260;
-  updateHearts();
-}
-
-function checkOverlap(r1, r2) {
-  return (
-    r1.x < r2.x + r2.w &&
-    r1.x + r1.w > r2.x &&
-    r1.y < r2.y + r2.h &&
-    r1.y + r1.h > r2.y
-  );
-}
-
-function showAnniversaryLetter() {
-  gameOver = true;
-  const popup = document.getElementById('popup');
-  const text = document.getElementById('popup-text');
-  text.innerHTML = `
-    <b>Happy 2 Months! ❤️</b><br><br>
-    I put together all the things you love—the matcha runs, the Lindor truffles, the sushi plates, and little kittens—just to get through the chaos and find you at the finish line.<br><br>
-    Two months in, and genuinely every second with you is my favorite part of the week. No matter if we’re exploring Central, getting lost in neon lights, or just lying on the sofa eating food together, I love being around you so much.<br><br>
-    Thank you for being you, for the cake, and for putting the biggest smile on my face every single day. Here's to us, month 2 down, and many more adventures ahead. ✨
-  `;
-  popup.style.display = 'block';
-}
-
-function restartGame() {
-  document.getElementById('popup').style.display = 'none';
-  chest.opened = false;
-  collectedCount = 0;
-  collectibles.forEach(c => c.collected = false);
-  document.getElementById('score-display').innerText = 'GOODIES: 0/5';
-  respawnPlayer();
-  gameOver = false;
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  ctx.save();
-  ctx.translate(-Math.floor(cameraX), 0);
-
-  // Backgrounds: London to Neon Tokyo
-  drawEnvironment();
-
-  // Platforms
-  platforms.forEach(p => {
-    if (p.x < TOKYO_TRANSITION) {
-      ctx.fillStyle = '#2c2b36';
-      ctx.fillRect(p.x, p.y, p.w, p.h);
-      ctx.fillStyle = '#1c1b24';
-      ctx.fillRect(p.x, p.y + 4, p.w, p.h - 4);
-    } else {
-      ctx.fillStyle = '#1a0d33';
-      ctx.fillRect(p.x, p.y, p.w, p.h);
-      ctx.fillStyle = '#ff0077';
-      ctx.fillRect(p.x, p.y, p.w, 4);
-    }
-  });
-
-  // Collectibles
-  collectibles.forEach(drawCollectible);
-
-  // Obstacles
-  obstacles.forEach(drawObstacle);
-
-  // Chest & Tani
-  drawChest(chest);
-  drawTani(tani.x, tani.y);
-
-  // Player
-  if (player.invincibleTimer % 8 < 4) {
-    drawPlayer(player.x, player.y);
-  }
-
-  ctx.restore();
-}
-
-function drawEnvironment() {
-  // London section sky & landmarks
-  ctx.fillStyle = '#1a192e';
-  ctx.fillRect(0, 0, TOKYO_TRANSITION, canvas.height);
+function openClue(key) {
+  const data = clueData[key];
+  document.getElementById('clue-emoji').innerText = data.emoji;
+  document.getElementById('clue-title').innerText = data.title;
+  document.getElementById('clue-desc').innerText = data.desc;
+  document.getElementById('clue-digit').innerText = data.digit;
   
-  // Big Ben silhouette & Victorian lanterns
-  ctx.fillStyle = '#100f21';
-  ctx.fillRect(200, 120, 48, 160);
-  ctx.fillRect(212, 70, 24, 50);
-  ctx.fillRect(220, 40, 8, 30);
-  
-  // London Streetlamps
-  for (let lx = 120; lx < TOKYO_TRANSITION; lx += 260) {
-    ctx.fillStyle = '#08080f';
-    ctx.fillRect(lx, 210, 6, 112);
-    ctx.fillStyle = '#ffeaa7';
-    ctx.beginPath();
-    ctx.arc(lx + 3, 208, 7, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Futuristic Tokyo neon background
-  ctx.fillStyle = '#090517';
-  ctx.fillRect(TOKYO_TRANSITION, 0, LEVEL_WIDTH - TOKYO_TRANSITION, canvas.height);
-
-  // Cyberpunk skyscrapers & neon signs
-  const buildings = [
-    { x: 1450, w: 120, h: 220, color: '#ff007f', sign: '東京' },
-    { x: 1650, w: 140, h: 260, color: '#00f0ff', sign: 'NEON' },
-    { x: 1900, w: 130, h: 200, color: '#ffe600', sign: 'RAMEN' },
-    { x: 2150, w: 150, h: 250, color: '#b537f2', sign: 'SHIBUYA' },
-    { x: 2450, w: 140, h: 270, color: '#00f0ff', sign: 'LOVE' },
-    { x: 2750, w: 160, h: 230, color: '#ff0055', sign: 'MATCH' }
-  ];
-
-  buildings.forEach(b => {
-    ctx.fillStyle = '#120b29';
-    ctx.fillRect(b.x, canvas.height - b.h, b.w, b.h);
-    // Neon Signboard
-    ctx.strokeStyle = b.color;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(b.x + 20, canvas.height - b.h + 20, b.w - 40, 40);
-    ctx.fillStyle = b.color;
-    ctx.font = '10px "Press Start 2P"';
-    ctx.fillText(b.sign, b.x + 26, canvas.height - b.h + 46);
-  });
+  discoveredClues.add(key);
+  document.getElementById('clue-counter').innerText = discoveredClues.size;
+  document.getElementById('clue-modal').style.display = 'flex';
 }
 
-function drawPlayer(x, y) {
-  // Jacked frame: Broad shoulders, skin fade, chain
-  // Skin tone (light brown)
-  ctx.fillStyle = '#c58c65';
-  ctx.fillRect(x + 5, y + 4, 18, 12); // face/neck
-  
-  // Black hair with scruffy fade
-  ctx.fillStyle = '#111';
-  ctx.fillRect(x + 4, y, 20, 6); // scruffy top
-  ctx.fillStyle = '#3a2c22';
-  ctx.fillRect(x + 3, y + 5, 3, 5); // skin fade side
-  ctx.fillRect(x + 22, y + 5, 3, 5);
-
-  // Black T-shirt (jacked wide shoulders)
-  ctx.fillStyle = '#1c1c1e';
-  ctx.fillRect(x + 2, y + 14, 24, 16); // chest/shoulders
-  
-  // Silver chain
-  ctx.fillStyle = '#dcdde1';
-  ctx.fillRect(x + 9, y + 15, 10, 3);
-  ctx.fillRect(x + 13, y + 18, 3, 3);
-
-  // Muscular arms
-  ctx.fillStyle = '#c58c65';
-  ctx.fillRect(x - 1, y + 16, 4, 12);
-  ctx.fillRect(x + 25, y + 16, 4, 12);
-
-  // Grey Jeans
-  ctx.fillStyle = '#636e72';
-  ctx.fillRect(x + 5, y + 30, 8, 14);
-  ctx.fillRect(x + 15, y + 30, 8, 14);
-
-  // Black sneakers
-  ctx.fillStyle = '#111';
-  ctx.fillRect(x + 3, y + 42, 10, 4);
-  ctx.fillRect(x + 15, y + 42, 10, 4);
+function closeClue() {
+  document.getElementById('clue-modal').style.display = 'none';
 }
 
-function drawTani(x, y) {
-  // Light brown skin, long black hair with gold highlights, corset, short skirt, red lipstick
-  // Hair back layer
-  ctx.fillStyle = '#1a181b';
-  ctx.fillRect(x + 1, y + 4, 26, 32);
-  // Golden highlights
-  ctx.fillStyle = '#d4af37';
-  ctx.fillRect(x + 3, y + 10, 3, 20);
-  ctx.fillRect(x + 22, y + 10, 3, 20);
-
-  // Face
-  ctx.fillStyle = '#c58c65';
-  ctx.fillRect(x + 6, y + 4, 16, 12);
-
-  // Red lipstick
-  ctx.fillStyle = '#ff1744';
-  ctx.fillRect(x + 12, y + 13, 5, 2);
-
-  // Black Corset
-  ctx.fillStyle = '#0f0f12';
-  ctx.fillRect(x + 6, y + 16, 16, 12);
-  ctx.fillStyle = '#ff4081'; // subtle corset lacing
-  ctx.fillRect(x + 13, y + 18, 2, 8);
-
-  // Short Black Skirt
-  ctx.fillStyle = '#1e1e24';
-  ctx.fillRect(x + 4, y + 28, 20, 7);
-
-  // Legs (light brown skin)
-  ctx.fillStyle = '#c58c65';
-  ctx.fillRect(x + 7, y + 35, 5, 8);
-  ctx.fillRect(x + 16, y + 35, 5, 8);
-
-  // Black boots
-  ctx.fillStyle = '#09090b';
-  ctx.fillRect(x + 6, y + 42, 6, 4);
-  ctx.fillRect(x + 16, y + 42, 6, 4);
+function openSafe() {
+  document.getElementById('safe-error').style.display = 'none';
+  document.getElementById('safe-modal').style.display = 'flex';
+  document.getElementById('c0').focus();
 }
 
-function drawCollectible(item) {
-  if (item.collected) return;
-  const { x, y, type } = item;
+function closeSafe() {
+  document.getElementById('safe-modal').style.display = 'none';
+}
 
-  if (type === 'sushi') {
-    ctx.fillStyle = '#222';
-    ctx.fillRect(x - 8, y - 8, 16, 16);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(x - 5, y - 5, 10, 10);
-    ctx.fillStyle = '#ff6348';
-    ctx.fillRect(x - 2, y - 2, 5, 5);
-  } else if (type === 'matcha') {
-    ctx.fillStyle = '#2ed573';
-    ctx.fillRect(x - 6, y - 7, 12, 16);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(x - 7, y - 9, 14, 3); // lid
-    ctx.fillStyle = '#70a1ff';
-    ctx.fillRect(x, y - 13, 2, 5); // straw
-  } else if (type === 'chocolate') {
-    ctx.fillStyle = '#d63031'; // red Lindor wrapper
-    ctx.beginPath();
-    ctx.arc(x, y, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#eccc68'; // gold bow ends
-    ctx.fillRect(x - 10, y - 2, 4, 4);
-    ctx.fillRect(x + 6, y - 2, 4, 4);
-  } else if (type === 'kitten') {
-    ctx.fillStyle = '#ffa502';
-    ctx.fillRect(x - 7, y - 4, 14, 10);
-    ctx.fillRect(x - 8, y - 8, 4, 4); // ears
-    ctx.fillRect(x + 4, y - 8, 4, 4);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(x - 4, y - 1, 2, 2);
-    ctx.fillRect(x + 2, y - 1, 2, 2);
-  } else if (type === 'flowers') {
-    ctx.fillStyle = '#ff4757';
-    ctx.beginPath();
-    ctx.arc(x - 4, y - 4, 5, 0, Math.PI * 2);
-    ctx.arc(x + 4, y - 4, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#2ed573';
-    ctx.fillRect(x - 1, y, 3, 10);
+function moveFocus(idx) {
+  const cur = document.getElementById(`c${idx}`);
+  if (cur.value.length === 1 && idx < 3) {
+    document.getElementById(`c${idx + 1}`).focus();
   }
 }
 
-function drawObstacle(obs) {
-  const { x, y, type } = obs;
-  if (type === 'battery') {
-    ctx.fillStyle = '#2f3542';
-    ctx.fillRect(x, y, 22, 14);
-    ctx.fillRect(x + 22, y + 4, 3, 6);
-    ctx.fillStyle = '#ff4757';
-    ctx.fillRect(x + 3, y + 3, 4, 8); // blinking low battery bar
-  } else if (type === 'hangry') {
-    // Mini hangry chibi version
-    ctx.fillStyle = '#ff6b81';
-    ctx.fillRect(x + 3, y + 2, 18, 14);
-    // angry brows
-    ctx.fillStyle = '#000';
-    ctx.fillRect(x + 5, y + 6, 4, 2);
-    ctx.fillRect(x + 14, y + 6, 4, 2);
-    // little storm cloud
-    ctx.fillStyle = '#57606f';
-    ctx.fillRect(x + 4, y - 8, 16, 6);
+function checkCode() {
+  const entered = 
+    document.getElementById('c0').value +
+    document.getElementById('c1').value +
+    document.getElementById('c2').value +
+    document.getElementById('c3').value;
+
+  if (entered === CORRECT_PASSCODE) {
+    closeSafe();
+    document.getElementById('scroll-modal').style.display = 'flex';
+  } else {
+    document.getElementById('safe-error').style.display = 'block';
   }
 }
 
-function drawChest(c) {
-  ctx.fillStyle = '#8b5a2b';
-  ctx.fillRect(c.x, c.y + 8, c.w, c.h - 8);
-  ctx.fillStyle = '#d4af37';
-  ctx.fillRect(c.x, c.y + 4, c.w, 6);
-  ctx.fillRect(c.x + 13, c.y + 14, 6, 6); // keyhole
+function closeScroll() {
+  document.getElementById('scroll-modal').style.display = 'none';
 }
-
-function loop() {
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
-
-loop();
 </script>
 </body>
 </html>
